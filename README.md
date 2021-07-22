@@ -22,6 +22,18 @@ Please see the [web site][sbt-editsource] for detailed usage instructions.
 
 [web site]: http://software.clapper.org/sbt-editsource.html
 
+### Using this fork
+
+You can use this fork using [JitPack](https://jitpack.io):
+
+in `plugins.sbt`
+
+```scala
+resolvers += "jitpack" at "https://jitpack.io"
+
+libraryDependencies += "com.github.littlebigbug" % "sbt-editsource" % "-SNAPSHOT"
+```
+
 ## License
 
 This plugin is released under a BSD license, adapted from
