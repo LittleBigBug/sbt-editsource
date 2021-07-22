@@ -35,7 +35,7 @@ lazy val root = (project in file(".")).settings(
   // bintrayRepository := "sbt-plugins",
   // bintray / bintrayOrganization := None,
 
-  publishArtifact := false,
+  publishArtifact := true,
   makePom / publishArtifact := true,
 
   resolvers += LocalMavenResolverForSbtPlugins,
