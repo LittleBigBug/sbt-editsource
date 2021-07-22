@@ -37,23 +37,20 @@
 
 package org.clapper.sbt.editsource
 
-import scala.util.matching.Regex
-import scala.Enumeration
-import scala.annotation.tailrec
-
+import grizzled.string.template.UnixShellStringTemplate
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import grizzled.string.template.UnixShellStringTemplate
+import scala.util.Try
 
 private[editsource] class EditSourceStringTemplate(vars: Map[String, String]) {
-  private val delegate = new UnixShellStringTemplate(dereference _,
+  private val delegate = new UnixShellStringTemplate(dereference,
                                                      """[a-zA-Z0-0_.]+""",
                                                      true)
   private val TimeFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
   private val DateFormat = new SimpleDateFormat("yyyy/MM/dd")
 
-  @inline final def substitute(line: String) = delegate.sub(line)
+  @inline final def substitute(line: String): Try[String] = delegate.sub(line)
 
   def dereference(varName: String): Option[String] = {
     if (varName.trim == "")
@@ -67,17 +64,14 @@ private[editsource] class EditSourceStringTemplate(vars: Map[String, String]) {
   }
 
   private def env(s: String): Option[String] = {
-    val result = System.getenv(s)
-    if (result == null) None else Some(result)
+    Option(System.getenv(s))
   }
 
   private def sys(s: String): Option[String] = {
-    val result = s match {
+    Option(s match {
       case "now"   => TimeFormat.format(new Date)
       case "today" => DateFormat.format(new Date)
       case _       => System.getProperty(s)
-    }
-
-    if (result == null) None else Some(result)
+    })
   }
 }

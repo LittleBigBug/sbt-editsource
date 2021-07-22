@@ -5,26 +5,26 @@ version := "0.4"
 
 organization := "org.clapper"
 
-libraryDependencies += "org.clapper" %% "grizzled-scala" % "4.4.2"
+libraryDependencies += "org.clapper" %% "grizzled-scala" % "4.10.0"
 
-(sources in EditSource) ++= (baseDirectory.value / "src" * "*.txt").get ++
+(EditSource / sources) ++= (baseDirectory.value / "src" * "*.txt").get ++
                             (baseDirectory.value / "src" * "*.md").get
 
 //    (bd / "src" * "*.md")
 
-targetDirectory in EditSource := baseDirectory.value / "target"
+EditSource / targetDirectory := baseDirectory.value / "target"
 
-variables in EditSource += "organization" -> organization.value
+EditSource / variables += "organization" -> organization.value
 
-variables in EditSource += "foo" -> "bar"
+EditSource / variables += "foo" -> "bar"
 
-flatten in EditSource := true
+EditSource / flatten := true
 
-substitutions in EditSource += sub("""build""".r, "Build")
+EditSource / substitutions += sub("""build""".r, "Build")
 
-substitutions in EditSource ++= Seq(
+EditSource / substitutions ++= Seq(
     sub("""(?i)\btest\b""".r, "TEST", SubAll),
     sub("""\b(?i)simple build tool\b""".r, "Scalable Build Tool")
 )
 
-compile in Compile := ((compile in Compile) dependsOn (edit in EditSource)).value
+Compile / compile := ((Compile / compile) dependsOn (EditSource / edit)).value

@@ -1,11 +1,20 @@
 project/boot/
 project/target/
+
+target/
+
+src/testproject/.history
 src/testproject/project/boot/
 src/testproject/project/plugins/project/
 src/testproject/project/plugins/target/
 src/testproject/project/target/
 src/testproject/target/
-target/
-src/testproject/.history
+
+.bsp/
+
+# Sublime
 *.sublime-*
+
+# IntelliJ
 /.idea
+*.iml

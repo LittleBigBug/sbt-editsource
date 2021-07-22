@@ -37,18 +37,17 @@
 
 package org.clapper.sbt.editsource
 
-import sbt._
+import sbt.{Def, _}
 import sbt.Keys._
+
 import java.io.{File, FileWriter, PrintWriter}
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import scala.io.Source
 import scala.util.matching.Regex
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.util.{Failure, Success}
-
 import grizzled.file.{util => FileUtil}
 
 /**
@@ -71,8 +70,8 @@ object EditSourcePlugin extends AutoPlugin {
   object SubOpt extends Enumeration {
     type SubOpt = Value
 
-    val NoSubstitutionOpts = Value(0x01)
-    val SubstituteAll      = Value(0x02)
+    val NoSubstitutionOpts: EditSourcePlugin.SubOpt.Value = Value(0x01)
+    val SubstituteAll: EditSourcePlugin.SubOpt.Value = Value(0x02)
   }
 
   import SubOpt._
@@ -92,7 +91,7 @@ object EditSourcePlugin extends AutoPlugin {
      * Determine whether a set of substitution options contains a
      * particular option.
      */
-    @inline final def contains(opt: SubOpt) = (codes & opt.id) != 0
+    @inline final def contains(opt: SubOpt): Boolean = (codes & opt.id) != 0
   }
 
   /**
@@ -115,8 +114,8 @@ object EditSourcePlugin extends AutoPlugin {
 
   object autoImport { // Stuff that's autoimported into the user's build.sbt
 
-    val SubAll = SubOpt.SubstituteAll
-    val NoSubOpts = SubOpt.NoSubstitutionOpts
+    val SubAll: EditSourcePlugin.SubOpt.Value = SubOpt.SubstituteAll
+    val NoSubOpts: EditSourcePlugin.SubOpt.Value = SubOpt.NoSubstitutionOpts
 
     val EditSource = config("editsource")
 
@@ -124,8 +123,8 @@ object EditSourcePlugin extends AutoPlugin {
 
     // Update with:
     //
-    // variables in EditSource <+= organization {org => ("organization", org)}
-    // variables in EditSource += ("foo", "bar")
+    // EditSource / variables <+= organization {org => ("organization", org)}
+    // EditSource / variables += ("foo", "bar")
     val variables = settingKey[Seq[(String, String)]](
       "variable -> value mappings"
     )
@@ -133,7 +132,7 @@ object EditSourcePlugin extends AutoPlugin {
 
     // e.g., replace all instances of "foo" (caseblind) with "bar", but
     // only if "foo" appears by itself.
-    // substitutions in EditSource += ("""(?i)\bfoo\b""".r, "bar")
+    // EditSource / substitutions += ("""(?i)\bfoo\b""".r, "bar")
     val substitutions = settingKey[Seq[Substitution]](
       "regex -> replacement strings"
     )
@@ -145,7 +144,7 @@ object EditSourcePlugin extends AutoPlugin {
 
     val edit = taskKey[Seq[File]]("Fire up the editin' engine.")
 
-    val clean = TaskKey[Unit]("clean", "Remove target files") in EditSource
+    val clean = EditSource / TaskKey[Unit]("clean", "Remove target files")
 
     private val DateFormat = new SimpleDateFormat("yyyy/MM/dd")
 
@@ -159,8 +158,8 @@ object EditSourcePlugin extends AutoPlugin {
       sources         := Seq.empty[File],
       targetDirectory := baseDirectory(_ / "target").value,
 
-      edit in EditSource  := EditSourceRunner.edit(EditSource).value,
-      clean in EditSource := EditSourceRunner.clean(EditSource).value
+      EditSource / edit  := EditSourceRunner.edit(EditSource).value,
+      EditSource / clean := EditSourceRunner.clean(EditSource).value
     )
 
     /**
@@ -168,7 +167,7 @@ object EditSourcePlugin extends AutoPlugin {
      * in a build file. Example:
      *
      * {{{
-     * substitutions in EditSource := Seq(
+     * EditSource / substitutions := Seq(
      *     sub("""\b(?i)test\b""".r, "TEST", SubAll),
      *     sub("""\b(?i)simple build tool\b""".r, "Scalable Build Tool")
      * )
@@ -180,14 +179,14 @@ object EditSourcePlugin extends AutoPlugin {
      */
     def sub(regex:        Regex,
             substitution: String,
-            opts:         SubOpts = NoSubOpts) = {
+            opts:         SubOpts = NoSubOpts): Substitution = {
       Substitution(regex, substitution, opts)
     }
   }
 
   import autoImport._
 
-  override lazy val projectSettings = inConfig(EditSource)(baseSettings)
+  override lazy val projectSettings: Seq[Def.Setting[_]] = inConfig(EditSource)(baseSettings)
 
   // -----------------------------------------------------------------
   // Implementation Stuff
@@ -195,12 +194,12 @@ object EditSourcePlugin extends AutoPlugin {
 
   object EditSourceRunner {
     def edit(config: Configuration): Def.Initialize[Task[Seq[File]]] = Def.task {
-      val sourceFiles = (sources in EditSource).value
-      val vars        = (variables in EditSource).value
-      val subs        = (substitutions in EditSource).value
-      val targetDir   = (targetDirectory in EditSource).value
+      val sourceFiles = (EditSource / sources).value
+      val vars        = (EditSource / variables).value
+      val subs        = (EditSource / substitutions).value
+      val targetDir   = (EditSource / targetDirectory).value
       val baseDir     = baseDirectory.value
-      val flattenTree = (flatten in EditSource).value
+      val flattenTree = (EditSource / flatten).value
       val log         = streams.value.log
 
       sourceFiles map editSource(vars.toMap, subs, targetDir, baseDir,
@@ -208,10 +207,10 @@ object EditSourcePlugin extends AutoPlugin {
     }
 
     def clean(config: Configuration): Def.Initialize[Task[Unit]] = Def.task {
-      val sourceFiles = (sources in EditSource).value
-      val targetDir   = (targetDirectory in EditSource).value
+      val sourceFiles = (EditSource / sources).value
+      val targetDir   = (EditSource / targetDirectory).value
       val baseDir     = baseDirectory.value
-      val flattenTree = (flatten in EditSource).value
+      val flattenTree = (EditSource / flatten).value
       val log         = streams.value.log
 
       for (src <- sourceFiles) {
@@ -308,7 +307,6 @@ object EditSourcePlugin extends AutoPlugin {
 
     else {
       val sourcePath = sourceFile.absolutePath
-      val targetDirPath = targetDirectory.absolutePath
       val basePath = baseDirectory.absolutePath
       if (! sourcePath.startsWith(basePath)) {
         throw new Exception("Can't preserve directory structure for " +
